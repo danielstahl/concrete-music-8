@@ -1,7 +1,7 @@
 
 (
 ~customSynthDir = "/Users/danielstahl/Documents/Projects/soundmining-modular/src/main/sc/synths";
-~irDir = PathName.new("/Users/danielstahl/Documents/Music/Pieces/Concrete Music/Concrete Music 7/impulse-response/");
+~irDir = PathName.new("/Users/danielstahl/Documents/Music/Pieces/Concrete Music/Concrete Music 8/impulse-response/");
 
 ~fftsize = 2048;
 ~bootFunction = {

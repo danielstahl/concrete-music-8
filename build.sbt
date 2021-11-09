@@ -16,7 +16,7 @@ libraryDependencies += "net.soundmining" %% "soundmining-modular" % "1.0-SNAPSHO
 
 console / initialCommands := """
     |import net.soundmining._
-    |ConcreteMusicr8.ini()
+    |ConcreteMusic8.init()
 """.trim().stripMargin
 
 console / cleanupCommands += """
