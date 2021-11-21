@@ -1,7 +1,7 @@
 package net.soundmining
 
 import net.soundmining.ConcreteMusic8.{PEN_LID_HIT, PEN_LID_RATTLE, PEN_LID_SCRATCH, client, soundPlays}
-import net.soundmining.modular.ModularInstrument.AudioInstrument
+import net.soundmining.modular.ModularInstrument.{AudioInstrument, StaticAudioBusInstrument}
 import net.soundmining.modular.ModularSynth
 import net.soundmining.modular.ModularSynth.{bandRejectFilter, controlMultiply, highPassFilter, lineControl, lowPassFilter, monoDelay, relativePercControl, ringModulate, sawOsc, sineControl, sineOsc, staticAudioBus, staticControl}
 import net.soundmining.synth.Instrument
@@ -534,5 +534,223 @@ object Test {
         .splay(0.2, pan)
         .play(start, 0)
     }
+  }
+
+  def theme1(start: Double = 0, reset: Boolean = true): Unit = {
+    if(reset) client.resetClock
+
+    soundPlays.mono(PEN_LID_HIT)
+      .playMono(1.0, 1.0)
+      .ring(3610)
+      .splay(0.1, 0.2)
+      .play(start, 0)
+
+    soundPlays.mono(PEN_LID_HIT)
+      .playMono(1.0, 1.0)
+      .ring(5226)
+      .splay(0.1, -0.2)
+      .play(start + 0.3, 0)
+
+
+  }
+
+  def theme2(start: Double = 0, reset: Boolean = true): Unit = {
+    if(reset) client.resetClock
+
+    soundPlays.mono(PEN_LID_RATTLE)
+      .playMono(0.192, 0.880, 1.0, 1.0)
+      .ring(4990)
+      .highPass(4990)
+      .splay(0.1, -0.9)
+      .play(start, 0)
+
+    soundPlays.mono(PEN_LID_RATTLE)
+      .playMono(1.212, 2.046, 1.0, 1.0)
+      .ring(6278)
+      .lowPass(3728.5)
+      .splay(0.1, 0.9)
+      .play(start + 0.362, 0)
+  }
+
+  def theme3(start: Double = 0, reset: Boolean = true): Unit = {
+    if(reset) client.resetClock
+
+    soundPlays.mono(PEN_LID_SCRATCH)
+      .playMono(0.144, 0.574, 1.0, 1.0)
+      .ring(985)
+      .highPass(985)
+      .splay(0.1, 0.2)
+      .play(start, 0)
+
+    soundPlays.mono(PEN_LID_SCRATCH)
+      .playMono(0.396, 0.885, 1.0, 1.0)
+      .ring(2365)
+      .highPass(2365)
+      .splay(0.1, -0.2)
+      .play(start + 0.2, 0)
+  }
+
+  def theme4(start: Double = 0, reset: Boolean = true): Unit = {
+    if (reset) client.resetClock
+
+    soundPlays.mono(PEN_LID_HIT)
+      .playMono(1.0, 1.0)
+      .ring(3610)
+      .highPass(3610)
+      .splay(0.1, 0.2)
+      .play(start, 0)
+
+    soundPlays.mono(PEN_LID_SCRATCH)
+      .playMono(0.144, 0.574, 1.0, 1.0)
+      .ring(985)
+      .highPass(985)
+      .splay(0.1, 0)
+      .play(start + 0.3, 0)
+
+    soundPlays.mono(PEN_LID_RATTLE)
+      .playMono(0.192, 0.880, 1.0, 1.0)
+      .ring(3728.5)
+      .highPass(3728.5)
+      .splay(0.1, -0.2)
+      .play(start + 0.5, 0)
+
+    soundPlays.mono(PEN_LID_HIT)
+      .playMono(1.0, 1.0)
+      .ring(5226)
+      .highPass(5226)
+      .splay(0.1, 0.2)
+      .play(start + 1.2, 0)
+  }
+
+  def theme5(start: Double = 0, reset: Boolean = true): Unit = {
+    if (reset) client.resetClock
+
+    soundPlays.mono(PEN_LID_RATTLE)
+      .playMono(0.192, 0.717, 1.0, 1.0)
+      .ring(2268.71)
+      .lowPass(2268.71)
+      .splay(0.1, -0.5)
+      .play(start, 0)
+
+    soundPlays.mono(PEN_LID_HIT)
+      .playMono(1.0, 1.0)
+      .ring(2320)
+      .lowPass(2320)
+      .splay(0.1, 0.5)
+      .play(start + 0.5, 0)
+
+    soundPlays.mono(PEN_LID_SCRATCH)
+      .playMono(0.084, 0.574, 1.0, 1.0)
+      .ring(5274)
+      .highPass(5274)
+      .splay(0.1, 0)
+      .play(start + 0.8, 0)
+
+    soundPlays.mono(PEN_LID_HIT)
+      .playMono(1.0, 1.0)
+      .ring(5226)
+      .highPass(5226)
+      .splay(0.1, 0.5)
+      .play(start + 1.4, 0)
+  }
+
+  def testDoubleDelay(start: Double = 0, reset: Boolean = true): Unit = {
+    if(reset) client.resetClock
+
+    val delayAudioBus = staticAudioBus()
+    val shortDelay = monoDelay(delayAudioBus, staticControl(1), 0.1, 1)
+      .addAction(TAIL_ACTION)
+      .nodeId(EFFECT)
+
+    val longDelay = monoDelay(shortDelay, staticControl(1), 1, 7)
+      .addAction(TAIL_ACTION)
+      .nodeId(EFFECT)
+
+    val ring = ringModulate(longDelay, staticControl(3610))
+      .addAction(TAIL_ACTION)
+      .nodeId(EFFECT)
+
+    val filter = highPassFilter(ring, staticControl(3610))
+      .addAction(TAIL_ACTION)
+      .nodeId(EFFECT)
+
+    val splay = ModularSynth.splay(filter, staticControl(0.1), centerBus = staticControl(0))
+      .addAction(TAIL_ACTION)
+      .nodeId(EFFECT)
+      .withNrOfChannels(2)
+
+    splay.getOutputBus.staticBus(0)
+    val graph = splay.buildGraph(0, 30, splay.graph(Seq()))
+    client.send(client.newBundle(0, graph))
+
+
+    soundPlays.mono(PEN_LID_HIT)
+      .playMono(1.0, 1.0)
+      .play(start, delayAudioBus)
+
+
+  }
+
+  /*
+  * Idea. Mechanical birds. Repeating. Short. One metal, one wood
+  * */
+
+  def theme6(start: Double = 0, reset: Boolean = true): Unit = {
+    if(reset) client.resetClock
+
+    def createDelayHighpass(delay: Double, decay: Double, pan: Double, ringFreq: Double): StaticAudioBusInstrument = {
+      val filter = (input: AudioInstrument, freq: Double) =>
+        highPassFilter(input, staticControl(freq))
+          .addAction(TAIL_ACTION)
+          .nodeId(EFFECT)
+
+      createDelay(delay, decay, pan, ringFreq, filter)
+    }
+
+    def createDelayLowpass(delay: Double, decay: Double, pan: Double, ringFreq: Double): StaticAudioBusInstrument = {
+      val filter = (input: AudioInstrument, freq: Double) =>
+        lowPassFilter(input, staticControl(freq))
+          .addAction(TAIL_ACTION)
+          .nodeId(EFFECT)
+
+      createDelay(delay, decay, pan, ringFreq, filter)
+    }
+
+    def createDelay(delayTime: Double, decayTime: Double, pan: Double, ringFreq: Double, filterFunc: (AudioInstrument, Double) => AudioInstrument): StaticAudioBusInstrument = {
+      val delayAudioBus = staticAudioBus()
+      val delay = monoDelay(delayAudioBus, staticControl(1), delayTime, decayTime)
+        .addAction(TAIL_ACTION)
+        .nodeId(EFFECT)
+
+      val ring = ringModulate(delay, staticControl(ringFreq))
+        .addAction(TAIL_ACTION)
+        .nodeId(EFFECT)
+
+      val filter = filterFunc.apply(ring, ringFreq)
+        .asInstanceOf[AudioInstrument]
+
+      val splay = ModularSynth.splay(filter, staticControl(0.1), centerBus = staticControl(pan))
+        .addAction(TAIL_ACTION)
+        .nodeId(EFFECT)
+        .withNrOfChannels(2)
+
+      splay.getOutputBus.staticBus(0)
+      val graph = splay.buildGraph(0, 15, splay.graph(Seq()))
+      client.send(client.newBundle(0, graph))
+
+      delayAudioBus
+    }
+
+    val delayAudioBus1 = createDelayLowpass(0.300, 10, 0.5, 3610)
+
+    val delayAudioBus2 = createDelayHighpass(0.250, 10, -0.5, 5226)
+
+    soundPlays.mono(PEN_LID_HIT)
+      .playMono(1.0, 1.0)
+      .play(start, delayAudioBus1)
+
+    soundPlays.mono(PEN_LID_HIT)
+      .playMono(1.0, 1.0)
+      .play(start + 0.3, delayAudioBus2)
   }
 }

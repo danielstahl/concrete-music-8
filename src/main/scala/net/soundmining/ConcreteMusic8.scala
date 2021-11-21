@@ -2,12 +2,14 @@ package net.soundmining
 
 import net.soundmining.modular.ModularInstrument.{AudioInstrument, ControlInstrument, StaticAudioBusInstrument}
 import net.soundmining.modular.ModularSynth
-import net.soundmining.modular.ModularSynth.{bandRejectFilter, controlMultiply, highPassFilter, lineControl, lowPassFilter, monoDelay, pulseOsc, relativePercControl, ringModulate, sawOsc, sineControl, sineOsc, staticAudioBus, staticControl, triangleOsc}
+import net.soundmining.modular.ModularSynth.{amModulate, bandPassFilter, bandRejectFilter, controlMultiply, highPassFilter, lineControl, lowPassFilter, monoDelay, panning, pulseOsc, relativePercControl, relativeThreeBlockcontrol, ringModulate, sawOsc, sineControl, sineOsc, staticAudioBus, staticControl, triangleOsc}
 import net.soundmining.sound.{SoundPlay, SoundPlays}
 import net.soundmining.synth.Instrument.{EFFECT, TAIL_ACTION}
 import net.soundmining.synth.SuperColliderClient.loadDir
 import net.soundmining.synth.Utils.absoluteTimeToMillis
 import net.soundmining.synth.{Instrument, SuperColliderClient}
+
+import scala.collection.mutable
 
 object ConcreteMusic8 {
 
@@ -47,16 +49,89 @@ object ConcreteMusic8 {
     ),
     numberOfOutputBuses = 2)
 
-  /*
-  * Combinations of sound tell little stories. Reflections in long saw rings.
-  * Several stories. Each one evolve.
-  * */
+  case class AudioNote() {
+    val audioInstruments = mutable.Stack[AudioInstrument]()
+
+    def saw(freq: Double, amp: ControlInstrument): AudioNote = {
+      audioInstruments.push(sawOsc(amp, staticControl(freq)).addAction(TAIL_ACTION))
+      this
+    }
+
+    def triangle(freq: Double, amp: ControlInstrument): AudioNote = {
+      audioInstruments.push(triangleOsc(amp, staticControl(freq)).addAction(TAIL_ACTION))
+      this
+    }
+
+    def pulse(freq: Double, amp: ControlInstrument): AudioNote = {
+      audioInstruments.push(pulseOsc(amp, staticControl(freq)).addAction(TAIL_ACTION))
+      this
+    }
+
+    def ring(modulatorFreq: Double): AudioNote = {
+      audioInstruments.push(ringModulate(audioInstruments.pop(), staticControl(modulatorFreq)).addAction(TAIL_ACTION))
+      this
+    }
+
+    def am(modulatorFreq: Double): AudioNote = {
+      audioInstruments.push(amModulate(audioInstruments.pop(), staticControl(modulatorFreq)).addAction(TAIL_ACTION))
+      this
+    }
+
+    def bandReject(freq: Double, rq: Double): AudioNote = {
+      audioInstruments.push(bandRejectFilter(audioInstruments.pop(), staticControl(freq), staticControl(rq))
+        .addAction(TAIL_ACTION))
+      this
+    }
+
+    def bandPass(freq: Double, rq: Double): AudioNote = {
+      audioInstruments.push(bandPassFilter(audioInstruments.pop(), staticControl(freq), staticControl(rq))
+        .addAction(TAIL_ACTION))
+      this
+    }
+
+    def highPass(freq: Double): AudioNote = {
+      audioInstruments.push(highPassFilter(audioInstruments.pop(), staticControl(freq))
+        .addAction(TAIL_ACTION))
+      this
+    }
+
+    def lowPass(freq: Double): AudioNote = {
+      audioInstruments.push(highPassFilter(audioInstruments.pop(), staticControl(freq))
+        .addAction(TAIL_ACTION))
+      this
+    }
+
+    def xfade(pan: ControlInstrument): AudioNote = {
+      audioInstruments.push(ModularSynth.xfade(audioInstruments.pop(), audioInstruments.pop(), pan)
+        .addAction(TAIL_ACTION))
+      this
+    }
+
+    def pan(panPosition: Double): AudioNote =
+      pan(staticControl(panPosition))
+
+    def pan(startPan: Double, endPan: Double): AudioNote =
+      pan(lineControl(startPan, endPan))
+
+    def pan(panPosition: ControlInstrument): AudioNote = {
+      audioInstruments.push(panning(audioInstruments.pop(), panPosition)
+        .addAction(TAIL_ACTION)
+        .withNrOfChannels(2))
+      this
+    }
+
+    def play(start: Double, dur: Double, output: Int = 0): Unit = {
+      val audioInstrument = audioInstruments.pop()
+      audioInstrument.getOutputBus.staticBus(output)
+      val graph = audioInstrument.buildGraph(start, dur, audioInstrument.graph(Seq()))
+      client.send(client.newBundle(absoluteTimeToMillis(start), graph))
+    }
+  }
 
   /**
    * Pen lid hit
    * Frequencies with db
    * 5226 (-26), 3610 (-31), 2320 (-41)
-   *
    *
    * Pen lid rattle
    *
@@ -90,228 +165,7 @@ object ConcreteMusic8 {
    * 1.711, 2.030
    *
    */
-  def theme1(start: Double = 0, reset: Boolean = true): Unit = {
-    if(reset) client.resetClock
-
-    soundPlays.mono(PEN_LID_HIT)
-      .playMono(1.0, 1.0)
-      .ring(3610)
-      .splay(0.1, 0.2)
-      .play(start, 0)
-
-    soundPlays.mono(PEN_LID_HIT)
-      .playMono(1.0, 1.0)
-      .ring(5226)
-      .splay(0.1, -0.2)
-      .play(start + 0.3, 0)
-
-
-  }
-
-  def theme2(start: Double = 0, reset: Boolean = true): Unit = {
-    if(reset) client.resetClock
-
-    soundPlays.mono(PEN_LID_RATTLE)
-      .playMono(0.192, 0.880, 1.0, 1.0)
-      .ring(4990)
-      .highPass(4990)
-      .splay(0.1, -0.9)
-      .play(start, 0)
-
-    soundPlays.mono(PEN_LID_RATTLE)
-      .playMono(1.212, 2.046, 1.0, 1.0)
-      .ring(6278)
-      .lowPass(3728.5)
-      .splay(0.1, 0.9)
-      .play(start + 0.362, 0)
-  }
-
-  def theme3(start: Double = 0, reset: Boolean = true): Unit = {
-    if(reset) client.resetClock
-
-    soundPlays.mono(PEN_LID_SCRATCH)
-      .playMono(0.144, 0.574, 1.0, 1.0)
-      .ring(985)
-      .highPass(985)
-      .splay(0.1, 0.2)
-      .play(start, 0)
-
-    soundPlays.mono(PEN_LID_SCRATCH)
-      .playMono(0.396, 0.885, 1.0, 1.0)
-      .ring(2365)
-      .highPass(2365)
-      .splay(0.1, -0.2)
-      .play(start + 0.2, 0)
-  }
-
-  def theme4(start: Double = 0, reset: Boolean = true): Unit = {
-    if (reset) client.resetClock
-
-    soundPlays.mono(PEN_LID_HIT)
-      .playMono(1.0, 1.0)
-      .ring(3610)
-      .highPass(3610)
-      .splay(0.1, 0.2)
-      .play(start, 0)
-
-    soundPlays.mono(PEN_LID_SCRATCH)
-      .playMono(0.144, 0.574, 1.0, 1.0)
-      .ring(985)
-      .highPass(985)
-      .splay(0.1, 0)
-      .play(start + 0.3, 0)
-
-    soundPlays.mono(PEN_LID_RATTLE)
-      .playMono(0.192, 0.880, 1.0, 1.0)
-      .ring(3728.5)
-      .highPass(3728.5)
-      .splay(0.1, -0.2)
-      .play(start + 0.5, 0)
-
-    soundPlays.mono(PEN_LID_HIT)
-      .playMono(1.0, 1.0)
-      .ring(5226)
-      .highPass(5226)
-      .splay(0.1, 0.2)
-      .play(start + 1.2, 0)
-  }
-
-  def theme5(start: Double = 0, reset: Boolean = true): Unit = {
-    if (reset) client.resetClock
-
-    soundPlays.mono(PEN_LID_RATTLE)
-      .playMono(0.192, 0.717, 1.0, 1.0)
-      .ring(2268.71)
-      .lowPass(2268.71)
-      .splay(0.1, -0.5)
-      .play(start, 0)
-
-    soundPlays.mono(PEN_LID_HIT)
-      .playMono(1.0, 1.0)
-      .ring(2320)
-      .lowPass(2320)
-      .splay(0.1, 0.5)
-      .play(start + 0.5, 0)
-
-    soundPlays.mono(PEN_LID_SCRATCH)
-      .playMono(0.084, 0.574, 1.0, 1.0)
-      .ring(5274)
-      .highPass(5274)
-      .splay(0.1, 0)
-      .play(start + 0.8, 0)
-
-    soundPlays.mono(PEN_LID_HIT)
-      .playMono(1.0, 1.0)
-      .ring(5226)
-      .highPass(5226)
-      .splay(0.1, 0.5)
-      .play(start + 1.4, 0)
-  }
-
-  def testDoubleDelay(start: Double = 0, reset: Boolean = true): Unit = {
-    if(reset) client.resetClock
-
-    val delayAudioBus = staticAudioBus()
-    val shortDelay = monoDelay(delayAudioBus, staticControl(1), 0.1, 1)
-      .addAction(TAIL_ACTION)
-      .nodeId(EFFECT)
-
-    val longDelay = monoDelay(shortDelay, staticControl(1), 1, 7)
-      .addAction(TAIL_ACTION)
-      .nodeId(EFFECT)
-
-    val ring = ringModulate(longDelay, staticControl(3610))
-      .addAction(TAIL_ACTION)
-      .nodeId(EFFECT)
-
-    val filter = highPassFilter(ring, staticControl(3610))
-      .addAction(TAIL_ACTION)
-      .nodeId(EFFECT)
-
-    val splay = ModularSynth.splay(filter, staticControl(0.1), centerBus = staticControl(0))
-      .addAction(TAIL_ACTION)
-      .nodeId(EFFECT)
-      .withNrOfChannels(2)
-
-    splay.getOutputBus.staticBus(0)
-    val graph = splay.buildGraph(0, 30, splay.graph(Seq()))
-    client.send(client.newBundle(0, graph))
-
-
-    soundPlays.mono(PEN_LID_HIT)
-      .playMono(1.0, 1.0)
-      .play(start, delayAudioBus)
-
-
-  }
-
-  /*
-  * Idea. Mechanical birds. Repeating. Short. One metal, one wood
-  * */
-
-  def theme6(start: Double = 0, reset: Boolean = true): Unit = {
-    if(reset) client.resetClock
-
-    def createDelayHighpass(delay: Double, decay: Double, pan: Double, ringFreq: Double): StaticAudioBusInstrument = {
-      val filter = (input: AudioInstrument, freq: Double) =>
-        highPassFilter(input, staticControl(freq))
-          .addAction(TAIL_ACTION)
-          .nodeId(EFFECT)
-
-      createDelay(delay, decay, pan, ringFreq, filter)
-    }
-
-    def createDelayLowpass(delay: Double, decay: Double, pan: Double, ringFreq: Double): StaticAudioBusInstrument = {
-      val filter = (input: AudioInstrument, freq: Double) =>
-        lowPassFilter(input, staticControl(freq))
-          .addAction(TAIL_ACTION)
-          .nodeId(EFFECT)
-
-      createDelay(delay, decay, pan, ringFreq, filter)
-    }
-
-    def createDelay(delayTime: Double, decayTime: Double, pan: Double, ringFreq: Double, filterFunc: (AudioInstrument, Double) => AudioInstrument): StaticAudioBusInstrument = {
-      val delayAudioBus = staticAudioBus()
-      val delay = monoDelay(delayAudioBus, staticControl(1), delayTime, decayTime)
-        .addAction(TAIL_ACTION)
-        .nodeId(EFFECT)
-
-      val ring = ringModulate(delay, staticControl(ringFreq))
-        .addAction(TAIL_ACTION)
-        .nodeId(EFFECT)
-
-      val filter = filterFunc.apply(ring, ringFreq)
-        .asInstanceOf[AudioInstrument]
-
-      val splay = ModularSynth.splay(filter, staticControl(0.1), centerBus = staticControl(pan))
-        .addAction(TAIL_ACTION)
-        .nodeId(EFFECT)
-        .withNrOfChannels(2)
-
-      splay.getOutputBus.staticBus(0)
-      val graph = splay.buildGraph(0, 15, splay.graph(Seq()))
-      client.send(client.newBundle(0, graph))
-
-      delayAudioBus
-    }
-
-    val delayAudioBus1 = createDelayLowpass(0.300, 10, 0.5, 3610)
-
-    val delayAudioBus2 = createDelayHighpass(0.250, 10, -0.5, 5226)
-
-    soundPlays.mono(PEN_LID_HIT)
-      .playMono(1.0, 1.0)
-      .play(start, delayAudioBus1)
-
-    soundPlays.mono(PEN_LID_HIT)
-      .playMono(1.0, 1.0)
-      .play(start + 0.3, delayAudioBus2)
-  }
-
-  /*
-  * Idea. Mechanical birds. Repeating. Short. One metal, one wood
-  * */
-  def theme7(start: Double = 0, reset: Boolean = true): Unit = {
+  def metalBirdTheme(start: Double = 0, reset: Boolean = true): Unit = {
     if (reset) client.resetClock
 
     rattleMelody(start)
@@ -337,8 +191,6 @@ object ConcreteMusic8 {
     rattleMelody(start + 14)
 
     def hitMelody(start: Double): Unit = {
-
-      // 2 3 2
       soundPlays.mono(PEN_LID_HIT)
         .playMono(1.0, 1.0)
         .ring(3610)
@@ -347,10 +199,24 @@ object ConcreteMusic8 {
         .play(start, 0)
 
       soundPlays.mono(PEN_LID_HIT)
-        .playMono(1.0, 1.0)
+        .playMono(1.0, 2.0)
+        .ring(5226)
+        .highPass(3610)
+        .splay(0.1, 0.5)
+        .play(start, 0)
+
+      soundPlays.mono(PEN_LID_HIT)
+        .playMono(1.0, 2.0)
         .ring(2320)
         .highPass(2320)
         .splay(0.1, -0.1)
+        .play(start + 0.2, 0)
+
+      soundPlays.mono(PEN_LID_HIT)
+        .playMono(1.0, 1.0)
+        .ring(5226)
+        .highPass(5226)
+        .splay(0.1, -0.5)
         .play(start + 0.2, 0)
 
       soundPlays.mono(PEN_LID_HIT)
@@ -361,16 +227,30 @@ object ConcreteMusic8 {
         .play(start + 0.5, 0)
 
       soundPlays.mono(PEN_LID_HIT)
-        .playMono(1.0, 1.0)
+        .playMono(1.0, 2.0)
+        .ring(5226)
+        .highPass(5226)
+        .splay(0.1, 0.5)
+        .play(start + 0.5, 0)
+
+      soundPlays.mono(PEN_LID_HIT)
+        .playMono(1.0, 2.0)
         .ring(2320)
         .highPass(2320)
         .splay(0.1, -0.1)
+        .play(start + 0.7, 0)
+
+      soundPlays.mono(PEN_LID_HIT)
+        .playMono(1.0, 1.0)
+        .ring(5226)
+        .highPass(5226)
+        .splay(0.1, -0.5)
         .play(start + 0.7, 0)
     }
 
     def rattleMelody(start: Double): Unit = {
       soundPlays.mono(PEN_LID_RATTLE)
-        .playMono(0.192, 0.389, 1.0, 1.0)
+        .playMono(0.192, 0.389, 1.0, 2.0)
         .ring(3728.5)
         .highPass(3728.5)
         .splay(0.1, -0.1)
@@ -378,9 +258,23 @@ object ConcreteMusic8 {
 
       soundPlays.mono(PEN_LID_RATTLE)
         .playMono(0.192, 0.389, 1.0, 1.0)
+        .ring(9868.71)
+        .highPass(9868.71)
+        .splay(0.1, -0.8)
+        .play(start, 0)
+
+      soundPlays.mono(PEN_LID_RATTLE)
+        .playMono(0.720, 0.880, 1.0, 1.0)
         .ring(5039)
         .highPass(5039)
         .splay(0.1, 0.1)
+        .play(start + 0.2, 0)
+
+      soundPlays.mono(PEN_LID_RATTLE)
+        .playMono(0.720, 0.880, 1.0, 2.0)
+        .ring(6368.84)
+        .highPass(6368.84)
+        .splay(0.1, 0.8)
         .play(start + 0.2, 0)
     }
 
@@ -393,10 +287,24 @@ object ConcreteMusic8 {
         .play(start, 0)
 
       soundPlays.mono(PEN_LID_SCRATCH)
-        .playMono(1.277, 1.711, 1.0, 1.0)
+        .playMono(0.144, 0.885, 1.0, 2.0)
+        .ring(5274)
+        .highPass(5274)
+        .splay(0.1, 0.7)
+        .play(start, 0)
+
+      soundPlays.mono(PEN_LID_SCRATCH)
+        .playMono(1.277, 1.711, 1.0, 2.0)
         .ring(985)
         .highPass(985)
         .splay(0.1, -0.2)
+        .play(start + 0.2, 0)
+
+      soundPlays.mono(PEN_LID_SCRATCH)
+        .playMono(1.277, 1.711, 1.0, 1.0)
+        .ring(5274)
+        .highPass(5274)
+        .splay(0.1, -0.7)
         .play(start + 0.2, 0)
     }
   }
@@ -448,17 +356,15 @@ object ConcreteMusic8 {
    * 1.238 1.678
    *
   * */
-
-
-  def theme8(start: Double = 0, reset: Boolean = true): Unit = {
+  def woodBirdTheme(start: Double = 0, reset: Boolean = true): Unit = {
     if (reset) client.resetClock
 
     chestHandleMelody(start)
     chestHandleMelody(1)
     chestScratch1Melody(2)
     chestHandleMelody(4)
-    chestScratch2Melody(5.5)
     chestScratch2Melody(6.5)
+    chestScratch2Melody(5.5)
     chestScratch1Melody(7.5)
     chestHandleMelody(8.5)
     chestHandleMelody(9.5)
@@ -468,30 +374,58 @@ object ConcreteMusic8 {
         .playMono(1.238, 1.678, 1.0, 1.0)
         .ring(204.025)
         .highPass(204.025)
-        .splay(0.1, 0.2)
+        .splay(0.1, 0.3)
         .play(start, 0)
 
       soundPlays.mono(CHEST_SCRATCH_2)
-        .playMono(0.202, 0.715, 1.0, 1.0)
+        .playMono(1.238, 1.678, 1.0, 2.0)
+        .ring(136.22)
+        .lowPass(136.22)
+        .splay(0.1, -0.5)
+        .play(start, 0)
+
+      soundPlays.mono(CHEST_SCRATCH_2)
+        .playMono(0.202, 0.715, 1.0, 2.0)
         .ring(204.025)
         .highPass(204.025)
-        .splay(0.1, -0.2)
+        .splay(0.1, -0.3)
+        .play(start + 0.2, 0)
+
+      soundPlays.mono(CHEST_SCRATCH_2)
+        .playMono(0.202, 0.715, 1.0, 1.0)
+        .ring(55.1678)
+        .lowPass(55.1678)
+        .splay(0.1, 0.7)
         .play(start + 0.2, 0)
     }
 
     def chestScratch1Melody(start: Double): Unit = {
       soundPlays.mono(CHEST_SCRATCH_1)
-        .playMono(1.025, 1.292, 1.0, 1.0)
+        .playMono(1.025, 1.292, 1.0, 2.0)
         .ring(205.203)
         .highPass(205.203)
-        .splay(0.1, -0.2)
+        .splay(0.1, -0.4)
+        .play(start, 0)
+
+      soundPlays.mono(CHEST_SCRATCH_1)
+        .playMono(1.025, 1.292, 1.0, 1.0)
+        .ring(73.7946)
+        .lowPass(73.7946)
+        .splay(0.1, 0.1)
         .play(start, 0)
 
       soundPlays.mono(CHEST_SCRATCH_1)
         .playMono(1.003, 0.484, 1.0, 1.0)
         .ring(205.203)
         .highPass(205.203)
-        .splay(0.1, 0.2)
+        .splay(0.1, 0.4)
+        .play(start + 0.2, 0)
+
+      soundPlays.mono(CHEST_SCRATCH_1)
+        .playMono(1.003, 0.484, 1.0, 2.0)
+        .ring(141.959)
+        .lowPass(141.959)
+        .splay(0.1, -0.1)
         .play(start + 0.2, 0)
     }
 
@@ -504,13 +438,218 @@ object ConcreteMusic8 {
         .play(start, 0)
 
       soundPlays.mono(CHEST_HANDLE)
-        .playMono(0.135, 0.334, 1.0, 1.0)
+        .playMono(0.135, 0.334, 1.0, 2.0)
+        .ring(627.114)
+        .lowPass(627.114)
+        .splay(0.1, -0.7)
+        .play(start, 0)
+
+      soundPlays.mono(CHEST_HANDLE)
+        .playMono(0.135, 0.334, 1.0, 2.0)
         .ring(144.793)
         .highPass(144.793)
         .splay(0.1, 0.2)
         .play(start + 0.13, 0)
+
+      soundPlays.mono(CHEST_HANDLE)
+        .playMono(0.135, 0.334, 1.0, 1.0)
+        .ring(706.733)
+        .lowPass(706.733)
+        .splay(0.1, 0.7)
+        .play(start + 0.13, 0)
     }
 
+  }
+
+  def ringModulation(freq1: Double, freq2: Double): (Double, Double) =
+    (freq1 - freq2, freq1 + freq2)
+
+  def woodEnvironmentTheme(start: Double = 0, reset: Boolean = true): Unit = {
+    if(reset) client.resetClock
+
+    playEnv1(0)
+    playEnv1(9)
+    playEnv1(18)
+
+    playEnv2(13)
+
+    def playEnv2(start: Double): Unit = {
+      AudioNote()
+        .triangle(141.959, relativePercControl(0.001, 1, 0.5, Left(0)))
+        .am(73.7946)
+        .lowPass(205.203)
+        .pan(-0.5, 0.5)
+        .play(start, 13)
+
+      AudioNote()
+        .triangle(73.7946, relativePercControl(0.001, 1, 0.5, Left(0)))
+        .ring(141.959)
+        .highPass(205.203)
+        .pan(0.2, -0.2)
+        .play(start, 13)
+    }
+
+    def playEnv1(start: Double): Unit = {
+      AudioNote()
+        .triangle(144.793, relativeThreeBlockcontrol(0.001, 0.4, 1, 1, 0.3, 0.001, Left(0)))
+        .ring(241.599)
+        .lowPass(706.733)
+        .triangle(241.599, relativeThreeBlockcontrol(0.001, 0.4, 1, 1, 0.3, 0.001, Left(0)))
+        .am(144.793)
+        .highPass(706.733)
+        .xfade(lineControl(-1, 1))
+        .pan(0.2, -0.4)
+        .play(start, 8)
+
+      AudioNote()
+        .triangle(241.599, relativeThreeBlockcontrol(0.001, 0.4, 1, 1, 0.3, 0.001, Left(0)))
+        .am(144.793)
+        .lowPass(144.793)
+        .triangle(144.793, relativeThreeBlockcontrol(0.001, 0.4, 1, 1, 0.3, 0.001, Left(0)))
+        .ring(241.599)
+        .highPass(401.936)
+        .xfade(lineControl(-1, 1))
+        .pan(-0.2, 0.4)
+        .play(start + 5, 8)
+
+
+/*
+      AudioNote()
+        .triangle(144.793, relativeThreeBlockcontrol(0.001, 0.4, 1, 1, 0.3, 0.001, Left(0)))
+        .ring(241.599)
+        .highPass(706.733)
+        .pan(0.2, 0.7)
+        .play(start, 8)
+
+
+      AudioNote()
+        .triangle(401.936, relativeThreeBlockcontrol(0.001, 0.4, 1, 1, 0.3, 0.001, Left(0)))
+        .am(627.114)
+        .highPass(241.599)
+        .pan(-0.9, -0.4)
+        .play(start + 5, 8)
+
+      AudioNote()
+        .triangle(401.936, relativeThreeBlockcontrol(0.001, 0.4, 1, 1, 0.3, 0.001, Left(0)))
+        .ring(627.114)
+        .lowPass(241.599)
+        .pan(0.9, 0.4)
+        .play(start + 5, 8)*/
+    }
+  }
+
+  def metalEnvironmentTheme(start: Double = 0, reset: Boolean = true): Unit = {
+    if(reset) client.resetClock
+
+    playEnv1(start)
+    playEnv1(start + 6)
+    playEnv1(start + 12)
+    playEnv1(start + 18)
+    playEnv1short(start + 24)
+
+    playEnv2(15)
+
+    def playEnv2(start: Double): Unit = {
+      AudioNote()
+        .saw(3728.5, relativePercControl(0.001, 1, 0.5, Left(0)))
+        .am(5039)
+        .lowPass(3728.5)
+        .pan(0.6, 0.3)
+        .play(start, 5)
+
+      AudioNote()
+        .saw(3728.5, relativePercControl(0.001, 1, 0.5, Left(0)))
+        .ring(5039)
+        .highPass(3728.5)
+        .pan(-0.2, -0.7)
+        .play(start, 5)
+
+      AudioNote()
+        .saw(954, relativePercControl(0.001, 1, 0.5, Left(0)))
+        .am(2268.71)
+        .lowPass(3728.5)
+        .pan(-0.6, -0.3)
+        .play(start + 2, 5)
+
+      AudioNote()
+        .saw(954, relativePercControl(0.001, 1, 0.5, Left(0)))
+        .ring(2268.71)
+        .highPass(3728.5)
+        .pan(0.2, 0.7)
+        .play(start + 2, 5)
+
+    }
+
+    def playEnv1(start: Double): Unit =
+      AudioNote()
+        .saw(5226, relativeThreeBlockcontrol(0.001, 0.3, 1, 1, 0.3, 0.001, Left(0)))
+        .ring(3610)
+        .saw(3610, relativeThreeBlockcontrol(0.001, 0.3, 1, 1, 0.3, 0.001, Left(0)))
+        .am(5226)
+        .xfade(lineControl(-1, 1))
+        .pan(-0.5, 0.5)
+        .play(start, 8)
+
+    def playEnv1short(start: Double): Unit =
+      AudioNote()
+        .saw(5226, relativeThreeBlockcontrol(0.001, 0.2, 1, 1, 0.1, 0.001, Left(0)))
+        .ring(3610)
+        .saw(3610, relativeThreeBlockcontrol(0.001, 0.2, 1, 1, 0.1, 0.001, Left(0)))
+        .am(5226)
+        .xfade(lineControl(-1, 1))
+        .pan(-0.5, 0.5)
+        .play(start, 5)
+
+
+
+    //playSawRing(0, 5226, 3610, (0.2, 0.6), ring => ring, 13, -0.5)
+    //playSawRing(0, 3610, 5226, (0.6, 0.1), ring => ring, 13, 0.5)
+    //playSawAm(8, 5226, 3610, (0.2, 0.5), ring => ring, 13, 0.7)
+    //playSawAm(8, 3610, 5226, (0.5, 0.2), ring => ring, 13, -0.7)
+    //playSawLongRing(0, 5226, 3610, ring => bandRejectFilter(ring, staticControl(5226), staticControl(3)).addAction(TAIL_ACTION), 0.66, 13, 0.5)
+    //playSawLongRing(5, 2320, 3610, 0.66, 13, 0.5)
+    //playSawLongRing(8, 5226, 2320, 0.5, 13, 0)
+
+
+    def playSawRing(start: Double, freq1: Double, freq2: Double, ad: (Double, Double), filterFunc: AudioInstrument => AudioInstrument, dur: Double, pan: Double): Unit = {
+
+      val pulse = sawOsc(relativeThreeBlockcontrol(0.001, ad._1, 1, 1, ad._2, 0.001, Left(0)),
+        staticControl(freq1))
+        .addAction(TAIL_ACTION)
+
+      val ring = ringModulate(pulse, staticControl(freq2))
+        .addAction(TAIL_ACTION)
+
+      val filter = filterFunc(ring)
+
+      val splay = ModularSynth.panning(filter, staticControl(pan))
+        .addAction(TAIL_ACTION)
+        .withNrOfChannels(2)
+
+      splay.getOutputBus.staticBus(0)
+      val graph = splay.buildGraph(start, dur, splay.graph(Seq()))
+      client.send(client.newBundle(absoluteTimeToMillis(start), graph))
+    }
+
+    def playSawAm(start: Double, freq1: Double, freq2: Double, ad: (Double, Double), filterFunc: AudioInstrument => AudioInstrument, dur: Double, pan: Double): Unit = {
+
+      val pulse = sawOsc(relativeThreeBlockcontrol(0.001, ad._1, 1, 1, ad._2, 0.001, Left(0)),
+        staticControl(freq1))
+        .addAction(TAIL_ACTION)
+
+      val ring = amModulate(pulse, staticControl(freq2))
+        .addAction(TAIL_ACTION)
+
+      val filter = filterFunc(ring)
+
+      val splay = ModularSynth.panning(filter, staticControl(pan))
+        .addAction(TAIL_ACTION)
+        .withNrOfChannels(2)
+
+      splay.getOutputBus.staticBus(0)
+      val graph = splay.buildGraph(start, dur, splay.graph(Seq()))
+      client.send(client.newBundle(absoluteTimeToMillis(start), graph))
+    }
   }
 
   def init(): Unit = {
