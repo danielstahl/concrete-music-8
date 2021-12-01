@@ -1,10 +1,10 @@
 package net.soundmining
 
-import net.soundmining.modular.ModularInstrument.{AudioInstrument, ControlInstrument, StaticAudioBusInstrument}
+import net.soundmining.modular.ModularInstrument.{AudioInstrument, ControlInstrument}
 import net.soundmining.modular.ModularSynth
-import net.soundmining.modular.ModularSynth.{amModulate, bandPassFilter, bandRejectFilter, controlMultiply, highPassFilter, lineControl, lowPassFilter, monoDelay, panning, pulseOsc, relativePercControl, relativeThreeBlockcontrol, ringModulate, sawOsc, sineControl, sineOsc, staticAudioBus, staticControl, triangleOsc}
+import net.soundmining.modular.ModularSynth.{amModulate, bandPassFilter, bandRejectFilter, highPassFilter, lineControl, panning, pulseOsc, relativePercControl, relativeThreeBlockcontrol, ringModulate, sawOsc, staticControl, triangleOsc}
 import net.soundmining.sound.{SoundPlay, SoundPlays}
-import net.soundmining.synth.Instrument.{EFFECT, TAIL_ACTION}
+import net.soundmining.synth.Instrument.TAIL_ACTION
 import net.soundmining.synth.SuperColliderClient.loadDir
 import net.soundmining.synth.Utils.absoluteTimeToMillis
 import net.soundmining.synth.{Instrument, SuperColliderClient}
@@ -165,36 +165,68 @@ object ConcreteMusic8 {
    * 1.711, 2.030
    *
    */
-  def metalBirdTheme(start: Double = 0, reset: Boolean = true): Unit = {
-    if (reset) client.resetClock
 
-    val one = 1.550 - 0.553
+  object MetalBirdTheme {
+    val one: Double = 1.550 - 0.553
 
-    val times = Melody.absolute(start, Seq(
-      one, one, one, one, one, one, one, one * 2,
-      one, one, one * 2, one, one))
+    def playShort(start: Double = 0, reset: Boolean = true): Unit = {
+      if (reset) client.resetClock
 
-    rattleMelody(times.head)
-    rattleMelody(times(1))
+      val times = Melody.absolute(start, Seq(
+        one, one, one))
 
-    scratchMelody(times(2))
+      rattleMelody(times.head)
+      rattleMelody(times(1))
 
-    rattleMelody(times(3))
-    rattleMelody(times(4))
+      scratchMelody(times(2))
+    }
 
-    scratchMelody(times(5))
+    def playShort2(start: Double = 0, reset: Boolean = true): Unit = {
+      if (reset) client.resetClock
 
-    rattleMelody(times(6))
+      val times = Melody.absolute(start, Seq(
+        one, one, one, one, one * 2, one))
 
-    hitMelody(times(7))
-    hitMelody(times(8))
+      rattleMelody(times.head)
+      rattleMelody(times(1))
 
-    scratchMelody(times(9))
+      scratchMelody(times(2))
 
-    hitMelody(times(10))
+      rattleMelody(times(3))
 
-    rattleMelody(times(11))
-    rattleMelody(times(12))
+      hitMelody(times(4))
+      hitMelody(times(5))
+    }
+
+    def playLong(start: Double = 0, reset: Boolean = true): Unit = {
+      if (reset) client.resetClock
+
+      val times = Melody.absolute(start, Seq(
+        one, one, one, one, one, one, one, one * 2,
+        one, one, one * 2, one, one))
+
+      rattleMelody(times.head)
+      rattleMelody(times(1))
+
+      scratchMelody(times(2))
+
+      rattleMelody(times(3))
+      rattleMelody(times(4))
+
+      scratchMelody(times(5))
+
+      rattleMelody(times(6))
+
+      hitMelody(times(7))
+      hitMelody(times(8))
+
+      scratchMelody(times(9))
+
+      hitMelody(times(10))
+
+      rattleMelody(times(11))
+      rattleMelody(times(12))
+    }
 
     def hitMelody(start: Double): Unit = {
       val short = 0.389 - 0.192
@@ -349,7 +381,6 @@ object ConcreteMusic8 {
     }
   }
 
-
   /**
    * Chest handle, chest scratch 1 and chest scratch 2
    *
@@ -397,23 +428,64 @@ object ConcreteMusic8 {
    * 1.238 1.678
    *
   * */
-  def woodBirdTheme(start: Double = 0, reset: Boolean = true): Unit = {
-    if (reset) client.resetClock
 
+  object WoodBirdTheme {
     val short = 0.484 - 0.003
-    val times = Melody.absolute(start,
-      Seq(2, 2, 4, 3, 2, 2, 2, 2, 2)
-        .map(_ * short))
 
-    chestHandleMelody(times.head)
-    chestHandleMelody(times(1))
-    chestScratch1Melody(times(2))
-    chestHandleMelody(times(3))
-    chestScratch2Melody(times(4))
-    chestScratch2Melody(times(5))
-    chestScratch1Melody(times(6))
-    chestHandleMelody(times(7))
-    chestHandleMelody(times(8))
+    def playShort1(start: Double = 0, reset: Boolean = true): Unit = {
+      if (reset) client.resetClock
+
+      val times = Melody.absolute(start,
+        Seq(2, 2)
+          .map(_ * short))
+      chestHandleMelody(times.head)
+      chestHandleMelody(times(1))
+    }
+
+    def playShort2(start: Double = 0, reset: Boolean = true): Unit = {
+      if (reset) client.resetClock
+
+      val times = Melody.absolute(start,
+        Seq(2, 2, 4, 3)
+          .map(_ * short))
+      chestHandleMelody(times.head)
+      chestHandleMelody(times(1))
+      chestScratch1Melody(times(2))
+      chestHandleMelody(times(3))
+    }
+
+    def playShort3(start: Double = 0, reset: Boolean = true): Unit = {
+      if (reset) client.resetClock
+
+      val times = Melody.absolute(start,
+        Seq(2, 2, 4, 3, 2, 2, 2)
+          .map(_ * short))
+      chestHandleMelody(times.head)
+      chestHandleMelody(times(1))
+      chestScratch1Melody(times(2))
+      chestHandleMelody(times(3))
+      chestScratch2Melody(times(4))
+      chestScratch2Melody(times(5))
+      chestScratch1Melody(times(6))
+    }
+
+    def playLong(start: Double = 0, reset: Boolean = true): Unit = {
+      if (reset) client.resetClock
+
+      val times = Melody.absolute(start,
+        Seq(2, 2, 4, 3, 2, 2, 2, 2, 2)
+          .map(_ * short))
+
+      chestHandleMelody(times.head)
+      chestHandleMelody(times(1))
+      chestScratch1Melody(times(2))
+      chestHandleMelody(times(3))
+      chestScratch2Melody(times(4))
+      chestScratch2Melody(times(5))
+      chestScratch1Melody(times(6))
+      chestHandleMelody(times(7))
+      chestHandleMelody(times(8))
+    }
 
     def chestScratch2Melody(start: Double): Unit = {
       val short = 0.2
@@ -508,24 +580,43 @@ object ConcreteMusic8 {
         .play(start + short, 0)
     }
 
+
   }
 
   def ringModulation(freq1: Double, freq2: Double): (Double, Double) =
     (freq1 - freq2, freq1 + freq2)
 
-  def woodEnvironmentTheme(start: Double = 0, reset: Boolean = true): Unit = {
-    if(reset) client.resetClock
+  object WoodEnvironmentTheme {
 
     val one = 1.025 - 0.003
 
-    val times = Melody.absolute(start, Seq(9, 9, 9).map(_ * one))
-    val startTwo = 13 * one
+    def playLong(start: Double = 0, reset: Boolean = true): Unit = {
+      if(reset) client.resetClock
 
-    playEnv1(times.head)
-    playEnv1(times(1))
-    playEnv1(times(2))
+      val times = Melody.absolute(start, Seq(9, 9, 9).map(_ * one))
+      val startTwo = start + (13 * one)
 
-    playEnv2(startTwo)
+      playEnv1(times.head)
+      playEnv1(times(1))
+      playEnv1(times(2))
+
+      playEnv2(startTwo)
+    }
+
+    def playShort1(start: Double = 0, reset: Boolean = true): Unit = {
+      if(reset) client.resetClock
+
+      playEnv1(start)
+    }
+
+    def playShort2(start: Double = 0, reset: Boolean = true): Unit = {
+      if(reset) client.resetClock
+
+      val times = Melody.absolute(start, Seq(9, 9).map(_ * one))
+
+      playEnv1(times.head)
+      playEnv1(times(1))
+    }
 
     def playEnv2(start: Double): Unit = {
       AudioNote()
@@ -541,6 +632,22 @@ object ConcreteMusic8 {
         .highPass(205.203)
         .pan(0.2, -0.2)
         .play(start, 13 * one)
+    }
+
+    def playEnv2short(start: Double): Unit = {
+      AudioNote()
+        .triangle(141.959, relativePercControl(0.001, 1, 0.5, Left(0)))
+        .am(73.7946)
+        .lowPass(205.203)
+        .pan(-0.5, 0.5)
+        .play(start, 8 * one)
+
+      AudioNote()
+        .triangle(73.7946, relativePercControl(0.001, 1, 0.5, Left(0)))
+        .ring(141.959)
+        .highPass(205.203)
+        .pan(0.2, -0.2)
+        .play(start, 8 * one)
     }
 
     def playEnv1(start: Double): Unit = {
@@ -568,23 +675,53 @@ object ConcreteMusic8 {
     }
   }
 
-  def metalEnvironmentTheme(start: Double = 0, reset: Boolean = true): Unit = {
-    if(reset) client.resetClock
+  object MetalEnvironmentTheme {
+    val one: Double = 1.550 - 0.553
 
-    val one = 1.550 - 0.553
+    def playLong(start: Double = 0, reset: Boolean = true): Unit = {
+      if(reset) client.resetClock
 
-    val times = Melody.absolute(start, Seq(
-      one * 6, one * 6, one * 6, one * 6, one * 6))
+      val times = Melody.absolute(start, Seq(
+        one * 6, one * 6, one * 6, one * 6, one * 6))
 
-    val startTwo = one * 15
+      val startTwo = one * 15
 
-    playEnv1(times.head)
-    playEnv1(times(1))
-    playEnv1(times(2))
-    playEnv1(times(3))
-    playEnv1short(times(4))
+      playEnv1(times.head)
+      playEnv1(times(1))
+      playEnv1(times(2))
+      playEnv1(times(3))
+      playEnv1short(times(4))
 
-    playEnv2(startTwo)
+      playEnv2(startTwo)
+    }
+
+    def playShort1(start: Double = 0, reset: Boolean = true): Unit = {
+      if(reset) client.resetClock
+
+      playEnv1(start)
+    }
+
+    def playShort2(start: Double = 0, reset: Boolean = true): Unit = {
+      if(reset) client.resetClock
+      val start2 = start + (one * 6)
+
+      playEnv1(start)
+      playEnv1(start2)
+    }
+
+    def playShort3(start: Double = 0, reset: Boolean = true): Unit = {
+      if(reset) client.resetClock
+
+      val times = Melody.absolute(start, Seq(
+        one * 6, one * 6, one * 6))
+
+      val startTwo = start + (one * 9)
+      playEnv1(times.head)
+      playEnv1(times(1))
+      playEnv1short(times(2))
+
+      playEnv2(startTwo)
+    }
 
     def playEnv2(start: Double): Unit = {
       AudioNote()
@@ -635,6 +772,40 @@ object ConcreteMusic8 {
         .xfade(lineControl(-1, 1))
         .pan(-0.5, 0.5)
         .play(start, one * 5)
+  }
+
+  def playMetalBirdFirstPart(start: Double = 0, reset: Boolean = true): Unit = {
+    if(reset) client.resetClock
+
+    val start2 = start + MetalEnvironmentTheme.one * 7
+
+    MetalEnvironmentTheme.playShort1(start, false)
+    MetalBirdTheme.playShort(start2, false)
+
+    val start3 = start2 + (MetalBirdTheme.one * 5)
+    MetalEnvironmentTheme.playShort2(start3, false)
+
+    val start4 = start3 + (MetalEnvironmentTheme.one * 13)
+    MetalBirdTheme.playShort2(start4, false)
+
+    val start5 = start4 + (MetalBirdTheme.one * 9)
+    MetalEnvironmentTheme.playShort3(start5, false)
+  }
+
+  def playWoodBirdFirstPart(start: Double = 0, reset: Boolean = true): Unit = {
+    if(reset) client.resetClock
+
+    WoodBirdTheme.playShort1(start, false)
+    val start2 = start + (WoodBirdTheme.short * 3)
+    WoodEnvironmentTheme.playShort1(start2, false)
+    val start3 = start2 + (WoodEnvironmentTheme.one * 12)
+    WoodBirdTheme.playShort2(start3, false)
+    val start4 = start3 + (WoodBirdTheme.short * 9)
+    WoodEnvironmentTheme.playShort2(start4, false)
+    val start5 = start4 + (WoodEnvironmentTheme.one * 21)
+    WoodBirdTheme.playShort3(start5, false)
+    val start6 = start5 + (WoodBirdTheme.short * 16)
+    WoodEnvironmentTheme.playLong(start6, false)
   }
 
   def init(): Unit = {
