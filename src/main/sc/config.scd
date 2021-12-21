@@ -18,6 +18,42 @@
 	'Supercollider loaded'.postln;
 };
 
+~midiBootFunction = {
+	var on, off, cc, bend, midiReciever;
+
+	MIDIClient.init;
+	MIDIIn.connectAll;
+	if(MIDIClient.sources.size > 0,
+	{
+		'Setting up midi'.postln;
+		midiReciever = NetAddr("localhost", 57111);
+
+		MIDIdef.noteOn(\noteOn, {
+			arg veloc, num, chan, src;
+			midiReciever.sendMsg("/noteOn", num, veloc);
+		});
+
+		MIDIdef.noteOff(\noteOff, {
+			arg veloc, num, chan, src;
+			midiReciever.sendMsg("/noteOff", num, veloc);
+		});
+
+		MIDIdef.cc(\cc, {
+			// 1 = Modulation wheel
+			arg value, control, chan;
+			midiReciever.sendMsg("/cc", value, control);
+		});
+
+		MIDIdef.bend(\bend, {
+			arg value, chan;
+			midiReciever.sendMsg("/bend", value);
+		});
+	},
+	{
+		'No midi found'.postln;
+	})
+};
+
 ~loadIr = {
 	arg irPath;
 	var rawIrBufL, rawIrBufR, bufSizeL, bufSizeR, irSpectrumBufL, irSpectrumBufR;
@@ -48,7 +84,7 @@
 	s.options.memSize = 2.pow(20);
 	s.dumpOSC(1);
 	s.doWhenBooted({
-		~simpleBootFunction.value;
+		~midiBootFunction.value;
 	});
 };
 )
@@ -68,5 +104,4 @@
 (
 ~setupConfig.value("64ch Scarlett Aggregate", 64);
 )
-
 
