@@ -5,7 +5,7 @@ import de.sciss.osc.Implicits._
 import de.sciss.osc.UDP.Receiver
 import net.soundmining.modular.ModularInstrument.{AudioInstrument, ControlInstrument}
 import net.soundmining.modular.ModularSynth
-import net.soundmining.modular.ModularSynth.{amModulate, bandPassFilter, bandRejectFilter, highPassFilter, lineControl, panning, pulseOsc, relativePercControl, relativeThreeBlockcontrol, ringModulate, sawOsc, staticControl, triangleOsc}
+import net.soundmining.modular.ModularSynth.{amModulate, bandPassFilter, bandRejectFilter, highPassFilter, lineControl, lowPassFilter, panning, pulseOsc, relativePercControl, relativeThreeBlockcontrol, ringModulate, sawOsc, staticControl, triangleOsc}
 import net.soundmining.sound.{SoundPlay, SoundPlays}
 import net.soundmining.synth.Instrument.TAIL_ACTION
 import net.soundmining.synth.SuperColliderClient.loadDir
@@ -53,7 +53,7 @@ object ConcreteMusic8 {
       PEN_LID_RATTLE -> SoundPlay(s"${SOUND_DIR}/Pen lid rattle.flac", 0.122, 2.110),
       PEN_LID_SCRATCH -> SoundPlay(s"${SOUND_DIR}/Pen lid scratch.flac", 0.058, 2.001),
     ),
-    numberOfOutputBuses = 2)
+    numberOfOutputBuses = 64)
 
   case class AudioNote() {
     val audioInstruments = mutable.Stack[AudioInstrument]()
@@ -112,7 +112,7 @@ object ConcreteMusic8 {
     }
 
     def lowPass(freq: Double): AudioNote = {
-      audioInstruments.push(highPassFilter(audioInstruments.pop(), staticControl(freq))
+      audioInstruments.push(lowPassFilter(audioInstruments.pop(), staticControl(freq))
         .addAction(TAIL_ACTION))
       this
     }
@@ -136,9 +136,10 @@ object ConcreteMusic8 {
       this
     }
 
-    def play(start: Double, dur: Double, output: Int = 0): Unit = {
+    def play(start: Double, dur: Double, output: Int = 0, realOutput: Boolean = true): Unit = {
+      val out = if(realOutput) soundPlays.getRealOutputBus(output) else output
       val audioInstrument = audioInstruments.pop()
-      audioInstrument.getOutputBus.staticBus(output)
+      audioInstrument.getOutputBus.staticBus(out)
       val graph = audioInstrument.buildGraph(start, dur, audioInstrument.graph(Seq()))
       client.send(client.newBundle(absoluteTimeToMillis(start), graph))
     }
@@ -219,32 +220,6 @@ object ConcreteMusic8 {
 
       scratchMelody2(start + (one * 5))
       scratchMelody2(start + (one * 6))
-
-      //rattleMelody2(start + (one * 10))
-
-      //rattleMelody(start)
-      //rattleMelody2(start + one)
-
-      //hitMelody2(start)
-      //scratchMelody2(start + (one * 2))
-
-      /*scratchMelody(start)
-
-      hitMelody(start + one)
-
-      scratchMelody2(start + (one * 3))
-      hitMelody2(start + (one * 6))*/
-
-
-      //scratchMelody(start)
-      //scratchMelody2(start + (one * 3))
-      /*
-      hitMelody(start)
-      hitMelody2(start + (one * 3))*/
-
-      //hitMelody2(start)
-      //scratchMelody2(start + (one * 2))
-
     }
 
     def playShort(start: Double = 0, reset: Boolean = true): Unit = {
@@ -324,7 +299,14 @@ object ConcreteMusic8 {
         .ring(5226)
         .highPass(5226)
         .splay(0.1, -0.5)
-        .play(start, 0)
+        .play(start, 2)
+
+      soundPlays.mono(PEN_LID_HIT)
+        .playMono(rate, 4.0)
+        .ring(3610 * rate)
+        .lowPass(3610 * rate)
+        .splay(0.2, 0.4)
+        .play(start, 6)
 
       soundPlays.mono(PEN_LID_HIT)
         .playMono(rate, 1.0)
@@ -338,7 +320,14 @@ object ConcreteMusic8 {
         .ring(5226)
         .highPass(3610)
         .splay(0.1, 0.5)
-        .play(start + short, 0)
+        .play(start + short, 2)
+
+      soundPlays.mono(PEN_LID_HIT)
+        .playMono(rate, 4.0)
+        .ring(2320 * rate)
+        .lowPass(2320 * rate)
+        .splay(-0.2, -0.4)
+        .play(start + short, 6)
 
       soundPlays.mono(PEN_LID_HIT)
         .playMono(rate, 1.0)
@@ -352,7 +341,14 @@ object ConcreteMusic8 {
         .ring(5226)
         .highPass(3610)
         .splay(0.1, 0.5)
-        .play(start + short + middle, 0)
+        .play(start + short + middle, 2)
+
+      soundPlays.mono(PEN_LID_HIT)
+        .playMono(rate, 4.0)
+        .ring(2320 * rate)
+        .lowPass(2320 * rate)
+        .splay(0.2, 0.4)
+        .play(start + short + middle, 6)
 
       soundPlays.mono(PEN_LID_HIT)
         .playMono(rate, 1.0)
@@ -366,7 +362,14 @@ object ConcreteMusic8 {
         .ring(5226)
         .highPass(3610)
         .splay(0.1, 0.5)
-        .play(start + short + middle + middle, 0)
+        .play(start + short + middle + middle, 2)
+
+      soundPlays.mono(PEN_LID_HIT)
+        .playMono(rate, 4.0)
+        .ring(2320 * rate)
+        .lowPass(2320 * rate)
+        .splay(0.2, 0.4)
+        .play(start + short + middle + middle, 6)
     }
 
     def hitMelody(start: Double): Unit = {
@@ -385,7 +388,16 @@ object ConcreteMusic8 {
         .ring(5226)
         .highPass(3610)
         .splay(0.1, 0.5)
-        .play(start, 0)
+        .play(start, 2)
+
+      val rate = 2320.0 / 3610.0
+
+      soundPlays.mono(PEN_LID_HIT)
+        .playMono(1.0, 4.0)
+        .ring(5226 * rate)
+        .lowPass(3610 * rate)
+        .splay(0.2, 0.5)
+        .play(start, 6)
 
       soundPlays.mono(PEN_LID_HIT)
         .playMono(1.0, 2.0)
@@ -399,7 +411,14 @@ object ConcreteMusic8 {
         .ring(5226)
         .highPass(5226)
         .splay(0.1, -0.5)
-        .play(start + short, 0)
+        .play(start + short, 2)
+
+      soundPlays.mono(PEN_LID_HIT)
+        .playMono(1.0, 6.0)
+        .ring(2320 * rate)
+        .lowPass(2320 * rate)
+        .splay(-0.2, -0.5)
+        .play(start + short, 6)
 
       soundPlays.mono(PEN_LID_HIT)
         .playMono(1.0, 1.0)
@@ -413,7 +432,14 @@ object ConcreteMusic8 {
         .ring(5226)
         .highPass(5226)
         .splay(0.1, 0.5)
-        .play(start + middle, 0)
+        .play(start + middle, 2)
+
+      soundPlays.mono(PEN_LID_HIT)
+        .playMono(1.0, 4.0)
+        .ring(5226 * rate)
+        .lowPass(3610 * rate)
+        .splay(0.2, 0.5)
+        .play(start + middle, 6)
 
       soundPlays.mono(PEN_LID_HIT)
         .playMono(1.0, 2.0)
@@ -427,7 +453,15 @@ object ConcreteMusic8 {
         .ring(5226)
         .highPass(5226)
         .splay(0.1, -0.5)
-        .play(start + middle + short, 0)
+        .play(start + middle + short, 2)
+
+      soundPlays.mono(PEN_LID_HIT)
+        .playMono(1.0, 6.0)
+        .ring(2320 * rate)
+        .lowPass(2320 * rate)
+        .splay(-0.2, -0.5)
+        .play(start + middle + short, 6)
+
     }
 
     def rattleMelody2(start: Double): Unit = {
@@ -448,14 +482,21 @@ object ConcreteMusic8 {
         .ring(6368.84)
         .highPass(6368.84)
         .splay(0.1, 0.8)
-        .play(start, 0)
+        .play(start, 2)
 
       soundPlays.mono(PEN_LID_RATTLE)
         .playMono(0.720, 0.880, rate, 1.0)
         .ring(6368.84)
         .lowPass(9868.71)
         .splay(0.1, 0.4)
-        .play(start, 0)
+        .play(start, 4)
+
+      soundPlays.mono(PEN_LID_RATTLE)
+        .playMono(0.720, 0.880, rate, 4.0)
+        .ring(5039 * rate)
+        .lowPass(5039 * rate)
+        .splay(0.2, 0.4)
+        .play(start, 6)
 
       soundPlays.mono(PEN_LID_RATTLE)
         .playMono(0.192, 0.389, rate, 3.0)
@@ -469,16 +510,21 @@ object ConcreteMusic8 {
         .ring(9868.71)
         .highPass(9868.71)
         .splay(0.1, -0.8)
-        .play(start + shortTime, 0)
+        .play(start + shortTime, 2)
 
       soundPlays.mono(PEN_LID_RATTLE)
         .playMono(0.192, 0.389, rate, 1.0)
         .ring(2268.71)
         .lowPass(9868.71)
         .splay(0.1, -0.4)
-        .play(start + shortTime, 0)
+        .play(start + shortTime, 4)
 
-
+      soundPlays.mono(PEN_LID_RATTLE)
+        .playMono(0.192, 0.389, rate, 4.0)
+        .ring(2268.71 * rate)
+        .lowPass(2268.71 * rate)
+        .splay(-0.2, -0.4)
+        .play(start + shortTime, 6)
     }
 
     def rattleMelody(start: Double): Unit = {
@@ -496,14 +542,25 @@ object ConcreteMusic8 {
         .ring(9868.71)
         .highPass(9868.71)
         .splay(0.1, -0.8)
-        .play(start, 0)
+        .play(start, 2)
 
       soundPlays.mono(PEN_LID_RATTLE)
         .playMono(0.192, 0.389, 1.0, 1.0)
         .ring(2268.71)
         .lowPass(9868.71)
         .splay(0.1, -0.4)
-        .play(start, 0)
+        .play(start, 4)
+
+
+      val rate = 2268.71 / 3728.5
+
+      soundPlays.mono(PEN_LID_RATTLE)
+        .playMono(0.192, 0.389, 1.0, 8.0)
+        .ring(2268.71 * rate)
+        .lowPass(954 * rate)
+        .splay(0.2, -0.2)
+        .play(start, 6)
+
 
       soundPlays.mono(PEN_LID_RATTLE)
         .playMono(0.720, 0.880, 1.0, 2.0)
@@ -517,14 +574,21 @@ object ConcreteMusic8 {
         .ring(6368.84)
         .highPass(6368.84)
         .splay(0.1, 0.8)
-        .play(start + shortTime, 0)
+        .play(start + shortTime, 2)
 
       soundPlays.mono(PEN_LID_RATTLE)
         .playMono(0.720, 0.880, 1.0, 1.0)
         .ring(6368.84)
         .lowPass(9868.71)
         .splay(0.1, 0.4)
-        .play(start + shortTime, 0)
+        .play(start + shortTime, 4)
+
+      soundPlays.mono(PEN_LID_RATTLE)
+        .playMono(0.720, 0.880, 1.0, 8.0)
+        .ring(3728.5 * rate)
+        .lowPass(954 * rate)
+        .splay(-0.2, 0.2)
+        .play(start + shortTime, 6)
     }
 
     def scratchMelody2(start: Double): Unit = {
@@ -545,7 +609,14 @@ object ConcreteMusic8 {
         .ring(5274)
         .highPass(5274)
         .splay(0.1, -0.7)
-        .play(start, 0)
+        .play(start, 2)
+
+      soundPlays.mono(PEN_LID_SCRATCH)
+        .playMono(1.277, 1.711, rate, 4.0)
+        .ring(2365 * rate)
+        .lowPass(2365 * rate)
+        .splay(0.2, 0.4)
+        .play(start, 6)
 
       soundPlays.mono(PEN_LID_SCRATCH)
         .playMono(0.144, 0.885, rate, 1.0)
@@ -559,7 +630,14 @@ object ConcreteMusic8 {
         .ring(5274)
         .highPass(5274)
         .splay(0.1, 0.7)
-        .play(start + (shortTime * invRate * 1), 0)
+        .play(start + (shortTime * invRate * 1), 2)
+
+      soundPlays.mono(PEN_LID_SCRATCH)
+        .playMono(0.144, 0.885, rate, 3.0)
+        .ring(985 * rate)
+        .lowPass(985 * rate)
+        .splay(-0.2, -0.4)
+        .play(start + (shortTime * invRate * 1), 6)
 
     }
 
@@ -577,14 +655,24 @@ object ConcreteMusic8 {
         .ring(5274)
         .highPass(5274)
         .splay(0.1, 0.7)
-        .play(start, 0)
+        .play(start, 2)
 
       soundPlays.mono(PEN_LID_SCRATCH)
         .playMono(0.144, 0.885, 1.0, 1.0)
         .ring(2365)
         .bandPass(985, 2)
         .splay(0.1, 0.4)
-        .play(start, 0)
+        .play(start, 4)
+
+      val rate = 2365.0 / 5274.0
+
+      soundPlays.mono(PEN_LID_SCRATCH)
+        .playMono(0.144, 0.885, 1.0, 3.0)
+        .ring(2365 * rate)
+        .lowPass(985 * rate)
+        .splay(0.2, 0.4)
+        .play(start, 6)
+
 
       soundPlays.mono(PEN_LID_SCRATCH)
         .playMono(1.277, 1.711, 1.0, 2.0)
@@ -598,14 +686,21 @@ object ConcreteMusic8 {
         .ring(5274)
         .highPass(5274)
         .splay(0.1, -0.7)
-        .play(start + shortTime, 0)
+        .play(start + shortTime, 2)
 
       soundPlays.mono(PEN_LID_SCRATCH)
         .playMono(1.277, 1.711, 1.0, 1.0)
         .ring(2365)
         .bandPass(985, 2)
         .splay(0.1, -0.4)
-        .play(start + shortTime, 0)
+        .play(start + shortTime, 4)
+
+      soundPlays.mono(PEN_LID_SCRATCH)
+        .playMono(1.277, 1.711, 1.0, 3.0)
+        .ring(2365 * rate)
+        .lowPass(985 * rate)
+        .splay(-0.2, -0.4)
+        .play(start + shortTime, 6)
     }
   }
 
@@ -781,28 +876,28 @@ object ConcreteMusic8 {
         .ring(204.025)
         .highPass(204.025)
         .splay(0.1, 0.3)
-        .play(start, 0)
+        .play(start, 8)
 
       soundPlays.mono(CHEST_SCRATCH_2)
         .playMono(1.238, 1.678, 1.0, 2.0)
         .ring(136.22)
         .lowPass(136.22)
         .splay(0.1, -0.5)
-        .play(start, 0)
+        .play(start, 10)
 
       soundPlays.mono(CHEST_SCRATCH_2)
         .playMono(0.202, 0.715, 1.0, 2.0)
         .ring(204.025)
         .highPass(204.025)
         .splay(0.1, -0.3)
-        .play(start + short, 0)
+        .play(start + short, 8)
 
       soundPlays.mono(CHEST_SCRATCH_2)
         .playMono(0.202, 0.715, 1.0, 1.0)
         .ring(55.1678)
         .lowPass(55.1678)
         .splay(0.1, 0.7)
-        .play(start + short, 0)
+        .play(start + short, 10)
     }
 
     def chestScratch2Melody2(start: Double): Unit = {
@@ -815,28 +910,28 @@ object ConcreteMusic8 {
         .ring(204.025)
         .highPass(204.025)
         .splay(-0.1, -0.3)
-        .play(start, 0)
+        .play(start, 8)
 
       soundPlays.mono(CHEST_SCRATCH_2)
         .playMono(1.238, 1.678, rate, 1.0)
         .ring(55.1678)
         .lowPass(55.1678)
         .splay(-0.1, 0.5)
-        .play(start, 0)
+        .play(start, 10)
 
       soundPlays.mono(CHEST_SCRATCH_2)
         .playMono(0.202, 0.715, rate, 1.0)
         .ring(204.025)
         .highPass(204.025)
         .splay(-0.1, 0.3)
-        .play(start + short, 0)
+        .play(start + short, 8)
 
       soundPlays.mono(CHEST_SCRATCH_2)
         .playMono(0.202, 0.715, rate, 2.0)
         .ring(136.22)
         .lowPass(136.22)
         .splay(-0.1, -0.7)
-        .play(start + short, 0)
+        .play(start + short, 10)
     }
 
     def chestScratch1Melody(start: Double): Unit = {
@@ -846,28 +941,28 @@ object ConcreteMusic8 {
         .ring(205.203)
         .highPass(205.203)
         .splay(0.1, -0.4)
-        .play(start, 0)
+        .play(start, 8)
 
       soundPlays.mono(CHEST_SCRATCH_1)
         .playMono(1.025, 1.292, 1.0, 1.0)
         .ring(73.7946)
         .lowPass(73.7946)
         .splay(0.1, 0.1)
-        .play(start, 0)
+        .play(start, 10)
 
       soundPlays.mono(CHEST_SCRATCH_1)
         .playMono(1.003, 0.484, 1.0, 1.0)
         .ring(205.203)
         .highPass(205.203)
         .splay(0.1, 0.4)
-        .play(start + short, 0)
+        .play(start + short, 8)
 
       soundPlays.mono(CHEST_SCRATCH_1)
         .playMono(1.003, 0.484, 1.0, 2.0)
         .ring(141.959)
         .lowPass(141.959)
         .splay(0.1, -0.1)
-        .play(start + short, 0)
+        .play(start + short, 10)
     }
 
     def chestScratch1Melody2(start: Double): Unit = {
@@ -879,28 +974,28 @@ object ConcreteMusic8 {
         .ring(205.203)
         .highPass(205.203)
         .splay(-0.1, 0.4)
-        .play(start, 0)
+        .play(start, 8)
 
       soundPlays.mono(CHEST_SCRATCH_1)
         .playMono(1.025, 1.292, rate, 1.0)
         .ring(141.959)
         .lowPass(141.959)
         .splay(-0.1, -0.1)
-        .play(start, 0)
+        .play(start, 10)
 
       soundPlays.mono(CHEST_SCRATCH_1)
         .playMono(1.003, 0.484, rate, 1.0)
         .ring(205.203)
         .highPass(205.203)
         .splay(-0.1, -0.4)
-        .play(start + short, 0)
+        .play(start + short, 8)
 
       soundPlays.mono(CHEST_SCRATCH_1)
         .playMono(1.003, 0.484, rate, 2.0)
         .ring(73.7946)
         .lowPass(73.7946)
         .splay(-0.1, 0.1)
-        .play(start + short, 0)
+        .play(start + short, 10)
     }
 
     def chestHandleMelody2(start: Double): Unit = {
@@ -914,28 +1009,28 @@ object ConcreteMusic8 {
         .ring(144.793)
         .highPass(144.793)
         .splay(-0.1, 0.2)
-        .play(start, 0)
+        .play(start, 8)
 
       soundPlays.mono(CHEST_HANDLE)
         .playMono(0.135, 0.334, rate, 1.0)
         .ring( 706.733)
         .lowPass( 706.733)
         .splay(-0.1, 0.7)
-        .play(start, 0)
+        .play(start, 10)
 
       soundPlays.mono(CHEST_HANDLE)
         .playMono(0.135, 0.334, rate, 1.0)
         .ring(144.793)
         .highPass(144.793)
         .splay(-0.1, -0.2)
-        .play(start + short, 0)
+        .play(start + short, 8)
 
       soundPlays.mono(CHEST_HANDLE)
         .playMono(0.135, 0.334, rate, 2.0)
         .ring(627.114)
         .lowPass(627.114)
         .splay(-0.1, -0.7)
-        .play(start + short, 0)
+        .play(start + short, 10)
     }
 
     def chestHandleMelody(start: Double): Unit = {
@@ -945,28 +1040,28 @@ object ConcreteMusic8 {
         .ring(144.793)
         .highPass(144.793)
         .splay(0.1, -0.2)
-        .play(start, 0)
+        .play(start, 8)
 
       soundPlays.mono(CHEST_HANDLE)
         .playMono(0.135, 0.334, 1.0, 2.0)
         .ring(627.114)
         .lowPass(627.114)
         .splay(0.1, -0.7)
-        .play(start, 0)
+        .play(start, 10)
 
       soundPlays.mono(CHEST_HANDLE)
         .playMono(0.135, 0.334, 1.0, 2.0)
         .ring(144.793)
         .highPass(144.793)
         .splay(0.1, 0.2)
-        .play(start + short, 0)
+        .play(start + short, 8)
 
       soundPlays.mono(CHEST_HANDLE)
         .playMono(0.135, 0.334, 1.0, 1.0)
         .ring(706.733)
         .lowPass(706.733)
         .splay(0.1, 0.7)
-        .play(start + short, 0)
+        .play(start + short, 10)
     }
 
 
@@ -1058,14 +1153,14 @@ object ConcreteMusic8 {
         .am(73.7946)
         .lowPass(205.203)
         .pan(-0.5, 0.5)
-        .play(start, 13 * one)
+        .play(start, 13 * one, 30)
 
       AudioNote()
         .triangle(73.7946, relativePercControl(0.001, 1, 0.5, Left(0)))
         .ring(141.959)
         .highPass(205.203)
         .pan(0.2, -0.2)
-        .play(start, 13 * one)
+        .play(start, 13 * one, 32)
     }
 
     def playEnv22(start: Double): Unit = {
@@ -1077,14 +1172,14 @@ object ConcreteMusic8 {
         .am(73.7946 * rate)
         .lowPass(205.203)
         .pan(0.5, -0.5)
-        .play(start, 13 * one * invRate)
+        .play(start, 13 * one * invRate, 34)
 
       AudioNote()
         .triangle(73.7946  * rate, relativePercControl(0.001, 1, 0.5, Left(0)))
         .ring(141.959)
         .highPass(205.203)
         .pan(-0.2, 0.2)
-        .play(start, 13 * one * invRate)
+        .play(start, 13 * one * invRate, 36)
     }
 
     def playEnv2short(start: Double): Unit = {
@@ -1132,7 +1227,7 @@ object ConcreteMusic8 {
         .highPass(706.733)
         .xfade(lineControl(-1, 1))
         .pan(0.2, -0.4)
-        .play(start, 8 * one)
+        .play(start, 8 * one, 22)
 
       AudioNote()
         .triangle(241.599, relativeThreeBlockcontrol(0.001, 0.4, 1, 1, 0.3, 0.001, Left(0)))
@@ -1143,7 +1238,7 @@ object ConcreteMusic8 {
         .highPass(401.936)
         .xfade(lineControl(-1, 1))
         .pan(-0.2, 0.4)
-        .play(start + (5 * one), 8 * one)
+        .play(start + (5 * one), 8 * one, 24)
     }
 
     def playEnv12(start: Double): Unit = {
@@ -1159,7 +1254,7 @@ object ConcreteMusic8 {
         .highPass(706.733)
         .xfade(lineControl(-1, 1))
         .pan(-0.2, 0.4)
-        .play(start, 8 * one * invRate)
+        .play(start, 8 * one * invRate, 26)
 
       AudioNote()
         .triangle(241.599, relativeThreeBlockcontrol(0.001, 0.4, 1, 1, 0.3, 0.001, Left(0)))
@@ -1170,7 +1265,7 @@ object ConcreteMusic8 {
         .highPass(401.936)
         .xfade(lineControl(-1, 1))
         .pan(0.2, -0.4)
-        .play(start + (3 * one * invRate), 8 * one * invRate)
+        .play(start + (3 * one * invRate), 8 * one * invRate, 28)
     }
   }
 
@@ -1245,45 +1340,80 @@ object ConcreteMusic8 {
         .am(5039)
         .lowPass(3728.5)
         .pan(0.6, 0.3)
-        .play(start, one * 5)
+        .play(start, one * 5, 16)
 
       AudioNote()
         .saw(3728.5, relativePercControl(0.001, 1, 0.5, Left(0)))
         .ring(5039)
         .highPass(3728.5)
         .pan(-0.2, -0.7)
-        .play(start, one * 5)
+        .play(start, one * 5, 18)
+
+      val rate = 3728.5 / 5039
+      val ratePow = math.pow(rate, 9)
+
+      AudioNote()
+        .saw(3728.5 * ratePow, relativePercControl(0.001, 0.25, 0.5, Left(0)))
+        .ring(5039 * ratePow)
+        .lowPass(3728.5 * ratePow)
+        .pan(0.2, -0.2)
+        .play(start, one * 5, 20)
+
 
       AudioNote()
         .saw(954, relativePercControl(0.001, 1, 0.5, Left(0)))
         .am(2268.71)
         .lowPass(3728.5)
         .pan(-0.6, -0.3)
-        .play(start + (one * 2), one * 5)
+        .play(start + (one * 2), one * 5, 16)
 
       AudioNote()
         .saw(954, relativePercControl(0.001, 1, 0.5, Left(0)))
         .ring(2268.71)
         .highPass(3728.5)
         .pan(0.2, 0.7)
-        .play(start + (one * 2), one * 5)
+        .play(start + (one * 2), one * 5, 18)
+
+      AudioNote()
+        .saw(954 * ratePow, relativePercControl(0.001, 0.25, 0.5, Left(0)))
+        .ring(2268.71 * ratePow)
+        .lowPass(3728.5 * ratePow)
+        .pan(0.2, -0.2)
+        .play(start + (one * 2), one * 5, 20)
+
     }
 
-    def playEnv1(start: Double): Unit =
+    def playEnv1(start: Double): Unit = {
       AudioNote()
-        .saw(5226, relativeThreeBlockcontrol(0.001, 0.3, 1, 1, 0.3, 0.001, Left(0)))
-        .ring(3610)
-        .saw(3610, relativeThreeBlockcontrol(0.001, 0.3, 1, 1, 0.3, 0.001, Left(0)))
-        .am(5226)
-        .xfade(lineControl(-1, 1))
-        .pan(-0.5, 0.5)
-        .play(start, one * 8)
+          .saw(5226, relativeThreeBlockcontrol(0.001, 0.3, 1, 1, 0.3, 0.001, Left(0)))
+          .ring(3610)
+          .saw(3610, relativeThreeBlockcontrol(0.001, 0.3, 1, 1, 0.3, 0.001, Left(0)))
+          .am(5226)
+          .xfade(lineControl(-1, 1))
+          .pan(-0.5, 0.5)
+          .play(start, one * 8, 12)
+
+      val rate = 2320.0 / 3610.0
+      val ratePow = math.pow(rate, 8)
+
+      AudioNote()
+        .saw(5226 * ratePow, relativeThreeBlockcontrol(0.001, 0.3, 1, 1, 0.3, 0.001, Left(0)))
+        .ring(3610 * ratePow)
+        .saw(3610 * ratePow, relativeThreeBlockcontrol(0.001, 0.3, 1, 1, 0.3, 0.001, Left(0)))
+        .am(5226 * ratePow)
+        .xfade(lineControl(1, -1))
+        .lowPass(2320 * ratePow)
+        .pan(-0.3, 0.3)
+        .play(start, one * 8, 20)
+    }
 
     def playEnvPart21(start: Double): Unit = {
       val rate =  3610.0 / 5226.0
 
       val invRate =  5226.0 / 3610.0
 
+      val ratePow = math.pow(rate, 8)
+
       AudioNote()
         .saw(5226, relativeThreeBlockcontrol(0.001, 0.3, 1, 1, 0.3, 0.001, Left(0)))
         .ring(3610)
@@ -1291,7 +1421,17 @@ object ConcreteMusic8 {
         .am(5226)
         .xfade(lineControl(-1, 1))
         .pan(-0.5, 0.5)
-        .play(start, one * 8)
+        .play(start, one * 8, 12)
+
+      AudioNote()
+        .saw(5226 * ratePow, relativeThreeBlockcontrol(0.001, 0.3, 0.5, 0.5, 0.3, 0.001, Left(0)))
+        .ring(3610 * ratePow)
+        .saw(3610 * ratePow, relativeThreeBlockcontrol(0.001, 0.3, 0.5, 0.5, 0.3, 0.001, Left(0)))
+        .am(5226 * ratePow)
+        .xfade(lineControl(1, -1))
+        .lowPass(3610 * ratePow)
+        .pan(-0.2, 0.2)
+        .play(start, one * 8, 20)
 
       AudioNote()
         .saw(5226 * rate, relativeThreeBlockcontrol(0.001, 0.3, 1, 1, 0.3, 0.001, Left(0)))
@@ -1300,7 +1440,17 @@ object ConcreteMusic8 {
         .am(5226 * rate)
         .xfade(lineControl(-1, 1))
         .pan(0.5, -0.5)
-        .play(start + (one * 3), one * 8 * invRate)
+        .play(start + (one * 3), one * 8 * invRate, 14)
+
+      AudioNote()
+        .saw(5226 * ratePow, relativeThreeBlockcontrol(0.001, 0.3, 0.5, 0.5, 0.3, 0.001, Left(0)))
+        .ring(3610 * ratePow)
+        .saw(3610 * ratePow, relativeThreeBlockcontrol(0.001, 0.3, 0.5, 0.5, 0.3, 0.001, Left(0)))
+        .am(5226 * ratePow)
+        .xfade(lineControl(1, -1))
+        .lowPass(3610 * ratePow)
+        .pan(0.2, -0.2)
+        .play(start + (one * 3), one * 8 * invRate, 20)
     }
 
     def playEnvPart22(start: Double): Unit = {
@@ -1308,19 +1458,28 @@ object ConcreteMusic8 {
 
       val invRate =  5226.0 / 3610.0
 
+      val ratePow = math.pow(rate, 8)
+
       AudioNote()
         .saw(3728.5, relativePercControl(0.001, 1, 0.5, Left(0)))
         .am(5039)
         .lowPass(3728.5)
         .pan(0.6, 0.3)
-        .play(start, one * 5)
+        .play(start, one * 5, 16)
 
       AudioNote()
         .saw(3728.5, relativePercControl(0.001, 1, 0.5, Left(0)))
         .ring(5039)
         .highPass(3728.5)
         .pan(-0.2, -0.7)
-        .play(start, one * 5)
+        .play(start, one * 5, 18)
+
+      AudioNote()
+        .saw(3728.5 * ratePow, relativePercControl(0.001, 1, 0.5, Left(0)))
+        .ring(5039 * ratePow)
+        .lowPass(3728.5 * ratePow)
+        .pan(0.2, -0.2)
+        .play(start, one * 5, 20)
 
 
       AudioNote()
@@ -1328,14 +1487,21 @@ object ConcreteMusic8 {
         .am(2268.71)
         .lowPass(3728.5)
         .pan(-0.6, -0.3)
-        .play(start + (one * 2), one * 5)
+        .play(start + (one * 2), one * 5, 16)
 
       AudioNote()
         .saw(954, relativePercControl(0.001, 1, 0.5, Left(0)))
         .ring(2268.71)
         .highPass(3728.5)
         .pan(0.2, 0.7)
-        .play(start + (one * 2), one * 5)
+        .play(start + (one * 2), one * 5, 18)
+
+      AudioNote()
+        .saw(954 * ratePow, relativePercControl(0.001, 1, 0.5, Left(0)))
+        .am(2268.71 * ratePow)
+        .lowPass(3728.5 * ratePow)
+        .pan(0.2, -0.2)
+        .play(start + (one * 2), one * 5, 20)
 
 
       AudioNote()
@@ -1343,31 +1509,46 @@ object ConcreteMusic8 {
         .am(5039 * rate)
         .lowPass(3728.5 * rate)
         .pan(-0.6, -0.3)
-        .play(start + (one * 5), one * 5 * invRate)
+        .play(start + (one * 5), one * 5 * invRate, 16)
 
       AudioNote()
         .saw(3728.5 * rate, relativePercControl(0.001, 1, 0.5, Left(0)))
         .ring(5039 * rate)
         .highPass(3728.5 * rate)
         .pan(0.2, 0.7)
-        .play(start + (one * 5), one * 5 * invRate)
+        .play(start + (one * 5), one * 5 * invRate, 18)
+
+      AudioNote()
+        .saw(3728.5 * ratePow, relativePercControl(0.001, 1, 0.5, Left(0)))
+        .ring(5039 * ratePow)
+        .lowPass(3728.5 * ratePow)
+        .pan(-0.2, 0.2)
+        .play(start + (one * 5), one * 5 * invRate, 20)
+
 
       AudioNote()
         .saw(954 * rate, relativePercControl(0.001, 1, 0.5, Left(0)))
         .am(2268.71 * rate)
         .lowPass(3728.5 * rate)
         .pan(0.6, 0.3)
-        .play(start + (one * 8), one * 5)
+        .play(start + (one * 8), one * 5, 16)
 
       AudioNote()
         .saw(954 * rate, relativePercControl(0.001, 1, 0.5, Left(0)))
         .ring(2268.71 * rate)
         .highPass(3728.5 * rate)
         .pan(-0.2, -0.7)
-        .play(start + (one * 8), one * 5)
+        .play(start + (one * 8), one * 5, 18)
+
+      AudioNote()
+        .saw(954 * ratePow, relativePercControl(0.001, 1, 0.5, Left(0)))
+        .am(2268.71 * ratePow)
+        .lowPass(3728.5 * ratePow)
+        .pan(0.2, -0.2)
+        .play(start + (one * 8), one * 5, 20)
     }
 
-    def playEnv1short(start: Double): Unit =
+    def playEnv1short(start: Double): Unit = {
       AudioNote()
         .saw(5226, relativeThreeBlockcontrol(0.001, 0.2, 1, 1, 0.1, 0.001, Left(0)))
         .ring(3610)
@@ -1375,7 +1556,21 @@ object ConcreteMusic8 {
         .am(5226)
         .xfade(lineControl(-1, 1))
         .pan(-0.5, 0.5)
-        .play(start, one * 5)
+        .play(start, one * 5, 12)
+
+      val rate = 2320.0 / 3610.0
+      val ratePow = math.pow(rate, 8)
+
+      AudioNote()
+        .saw(5226 * ratePow, relativeThreeBlockcontrol(0.001, 0.2, 1, 1, 0.1, 0.001, Left(0)))
+        .ring(3610 * ratePow)
+        .saw(3610 * ratePow, relativeThreeBlockcontrol(0.001, 0.2, 1, 1, 0.1, 0.001, Left(0)))
+        .am(5226 * ratePow)
+        .xfade(lineControl(1, -1))
+        .lowPass(2320 * ratePow)
+        .pan(-0.3, 0.3)
+        .play(start, one * 5, 20)
+    }
   }
 
   def playMetalBirdFirstPart(start: Double = 0, reset: Boolean = true): Unit = {
@@ -1440,6 +1635,18 @@ object ConcreteMusic8 {
     WoodEnvironmentTheme.playLong2(start6, false)
   }
 
+  def playRecapitulation(start: Double = 0, reset: Boolean = true): Unit = {
+    if(reset) client.resetClock
+
+    MetalBirdTheme.playShort(start, false)
+    val start2 = start + (MetalBirdTheme.one * 3)
+    WoodBirdTheme.playShort1(start2, false)
+    val start3 = start2 + (WoodBirdTheme.short * 3)
+    MetalEnvironmentTheme.playShort1(start3, false)
+    val start4 = start3 + (MetalEnvironmentTheme.one * 5)
+    WoodEnvironmentTheme.playShort1(start4, false)
+  }
+
   def init(): Unit = {
     println("Starting up SuperCollider client")
     client.start
@@ -1493,19 +1700,20 @@ object ConcreteMusic8 {
 
     noteName match {
       case "c" =>
-        playMetalBirdFirstPart(start, false)
-        println("playMetalBirdFirstPart")
+        MetalEnvironmentTheme.playEnv1(start)
+        println("playEnv1")
       case "d" =>
-        playWoodBirdFirstPart(start, false)
-        println("playWoodBirdFirstPart")
+        MetalEnvironmentTheme.playEnv1short(start)
+        println("playEnv1short")
       case "e" =>
-        playMetalBirdSecondPart(start, false)
-        println("playMetalBirdSecondPart")
+        MetalEnvironmentTheme.playEnv2(start)
+        println("playEnv2")
       case "f" =>
-        playWoodBirdSecondPart(start, false)
-        println("playWoodBirdSecondPart")
+        MetalEnvironmentTheme.playEnvPart21(start)
+        println("playEnvPart21")
       case "g" =>
-
+        MetalEnvironmentTheme.playEnvPart22(start)
+        println("playEnvPart22")
       case "a" =>
 
       case _ =>
